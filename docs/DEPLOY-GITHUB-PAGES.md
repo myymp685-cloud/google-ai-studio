@@ -1,5 +1,9 @@
 # 部署到 GitHub Pages（在线 Demo）
 
+> ✅ **本项目已按本文档部署上线：**
+> 试玩 <https://myymp685-cloud.github.io/google-ai-studio/> · 源码 <https://github.com/myymp685-cloud/google-ai-studio>
+> 下面保留完整步骤，供换仓库 / 重新部署时照做。
+
 目标：把 `dino-motion/` 变成一个**可点开的在线 Demo**，简历里直接放链接。
 本项目的结构已经**天然适配 Pages 子路径**，不需要改任何代码。
 
@@ -131,7 +135,7 @@ node -e "console.log(require('ffmpeg-static'))"   # 打印 exe 路径
 ## 8. 完成后写进简历的形态
 
 > **体感小恐龙 DINO MOTION** — 纯前端体感 3D 跑酷
-> 🎮 在线试玩：https://<用户名>.github.io/dino-motion/
-> 💻 源码：https://github.com/<用户名>/dino-motion
+> 🎮 在线试玩：https://myymp685-cloud.github.io/google-ai-studio/
+> 💻 源码：https://github.com/myymp685-cloud/google-ai-studio
 
 一句话：「MediaPipe 姿态识别驱动 Three.js 三人称跑酷，零构建、零 CDN、可离线，手写约 3,400 行 JS。」
