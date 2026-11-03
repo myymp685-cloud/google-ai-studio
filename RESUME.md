@@ -96,10 +96,10 @@ A：两件。一是**输入信噪比**——把不可靠的人体信号变成可
 
 ## 还差什么（让它更「能打」）
 
-> ✅ 已完成（2026-11）：**在线 Demo 部署手册**（[docs/DEPLOY-GITHUB-PAGES.md](docs/DEPLOY-GITHUB-PAGES.md)）、**实机演示 GIF**（`assets/demo/dino-motion-demo.gif`，760×475 / 8 秒 / 6 MB，已接入 README 顶部）、高分辨率截图（`docs/preview-*.png`）。剩下的只差你填 GitHub 用户名并推送。
+> ✅ 已完成（2026-11）：**在线 Demo 已上线** <https://myymp685-cloud.github.io/google-ai-studio/>（源码 <https://github.com/myymp685-cloud/google-ai-studio>）、**部署手册**（[docs/DEPLOY-GITHUB-PAGES.md](docs/DEPLOY-GITHUB-PAGES.md)）、**实机演示 GIF**（`assets/demo/dino-motion-demo.gif`，760×475 / 8 秒 / 6 MB，已接入 README 顶部）、高分辨率截图（`docs/preview-*.png`）。
 
 按投入产出排序，仍可选补：
 
-1. **真正把 Pages 打开**（10 分钟）：按手册走一遍，把生成的链接填进简历与 README 占位。
-2. **一件式可运行仓库**：GitHub Actions 跑 `npm test`、README 顶部放构建徽章；`vendor/` 是否入库按团队习惯取舍（入库=可离线，忽略=仓库更小）。
+1. **把链接填进简历 / 求职平台**：Demo 与源码链接已可用，直接复制。
+2. **一件式可运行仓库**：GitHub Actions 跑 `npm test`（`.github/workflows/ci.yml` 已就位）、README 顶部放构建徽章；`vendor/` 是否入库按团队习惯取舍（入库=可离线，忽略=仓库更小）。
 3. **可视化数值面板**（可选）：把 chase / speed / 当前障碍权重实时打到 debug 层，面试可现场演示「测试与运行时一致」。
