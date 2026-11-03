@@ -10,9 +10,10 @@ cloudflared.exe
 cpolar_amd64.msi
 
 # 截图 / GIF 生成的中间产物
-shots-ghpages/
+shots-*/
 *.pid
 .tmp_srv_pid
+__pycache__/
 
 # 系统 / 编辑器
 .DS_Store
