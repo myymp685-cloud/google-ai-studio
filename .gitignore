@@ -1,0 +1,22 @@
+# 依赖与运行时产物
+node_modules/
+package-lock.json
+
+# 本地化第三方库（体积大，可保留以支持离线运行；如需提交到 git 建议忽略并用下载脚本重建）
+# vendor/
+
+# 本地内网穿透工具（体积大，只在本机临时共享用，勿提交）
+cloudflared.exe
+cpolar_amd64.msi
+
+# 截图 / GIF 生成的中间产物
+shots-ghpages/
+*.pid
+.tmp_srv_pid
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

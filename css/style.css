@@ -1,0 +1,474 @@
+/* ============================================================ */
+/* Phase-5 视觉重构（规格7）：放弃像素风 —— Rajdhani 现代科技感无衬线 +
+/* 透明全息玻璃拟态面板 + 暖色微光按钮；配色对齐 3D 暮色场景（#0a1128→#1c2b59 + 暖橙 #ffc46b）。 */
+/* Google Fonts 不可达时回退系统无衬线栈（README 已注明）。 */
+/* z-index 与 pointer-events 纪律与 Phase-2/3/4 完全一致：3D 层/覆盖层绝不拦截游戏输入。 */
+/* ============================================================ */
+
+/* ===== 全局 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --sky-deep: #0a1128;      /* 暮色天顶（规格1） */
+  --sky-mid: #1c2b59;       /* 暮色地平线（规格1） */
+  --warm: #ffc46b;          /* 暖橙主强调（发光体/按钮） */
+  --warm-soft: #ffd9a0;     /* 暖橙柔光 */
+  --ice: #9fd8ff;           /* 冷蓝信息色（与暖色对比） */
+  --danger: #ff6b5e;        /* 结算/警示 */
+  --glass-border: rgba(159, 216, 255, 0.28);   /* 全息玻璃描边 */
+}
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--sky-deep);
+  font-family: 'Rajdhani', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  color: #e8f1ff;
+}
+
+/* ===== 3D 背景层：pointer-events:none，绝不拦截游戏输入 ===== */
+#scene3d-container {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+#scene3d-container canvas { display: block; }
+
+/* ===== 前景 UI 层 ===== */
+#ui-layer {
+  position: fixed; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+/* 透明全息玻璃拟态卡片（规格7）：斜向渐变 + blur/saturate + 冷色细描边 + 顶部内高光 */
+.glass-card {
+  background: linear-gradient(160deg, rgba(28, 43, 89, 0.42) 0%, rgba(10, 17, 40, 0.58) 100%);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: 0 0 28px rgba(159, 216, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 24px 30px;
+  text-align: center;
+  max-width: 92vw;
+}
+#title {
+  font-size: 26px; font-weight: 700; letter-spacing: 6px;
+  /* 暖→冷渐变文字（全息感）+ 柔和投影替代像素 text-shadow */
+  background: linear-gradient(90deg, var(--warm-soft) 0%, var(--warm) 45%, var(--ice) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 196, 107, 0.35));
+  margin-bottom: 10px;
+}
+#score-line {
+  font-size: 18px; font-weight: 600; letter-spacing: 3px; margin-bottom: 12px;
+  color: var(--ice); text-shadow: 0 0 8px rgba(159, 216, 255, 0.45);
+}
+#score-line #score { color: #ffffff; margin-left: 18px; }
+
+#game-canvas {
+  pointer-events: auto;             /* 游戏画布接收点击/触摸跳跃 */
+  display: block; margin: 0 auto;
+  width: min(800px, 86vw); height: auto;
+  background: transparent;          /* 透出 3D 背景 */
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#hint-bar {
+  margin-top: 12px; font-size: 13px; font-weight: 500; letter-spacing: 1px;
+  display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap;
+  color: #a9c3e8;
+}
+/* 微小发光按钮（规格7）：暖色细描边 + 微弱辉光 */
+#calibrate-btn {
+  pointer-events: auto;
+  font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  padding: 7px 14px;
+  color: var(--warm-soft);
+  background: rgba(255, 196, 107, 0.08);
+  border: 1px solid rgba(255, 196, 107, 0.45);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.15);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+#calibrate-btn:hover {
+  background: rgba(255, 196, 107, 0.18);
+  box-shadow: 0 0 14px rgba(255, 196, 107, 0.4);
+}
+#pose-status, #perf-status {
+  font-size: 12px; font-weight: 500; letter-spacing: 1px;
+  color: #8ba3cc; margin-top: 8px;
+}
+
+/* ===== 右下角摄像头调试小窗 ===== */
+#cam-debug {
+  position: fixed; right: 14px; bottom: 14px; z-index: 2;
+  width: 176px;
+  background: linear-gradient(160deg, rgba(28, 43, 89, 0.5) 0%, rgba(10, 17, 40, 0.65) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px;
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  box-shadow: 0 0 16px rgba(159, 216, 255, 0.12);
+}
+#cam-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  color: #ff8a80; margin-bottom: 6px;
+}
+.rec-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff2d55;
+  animation: breathe 1.6s ease-in-out infinite;   /* 呼吸动画 */
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.25; box-shadow: 0 0 2px #ff2d55; }
+  50%      { opacity: 1;    box-shadow: 0 0 10px #ff2d55; }
+}
+#cam-stage { position: relative; width: 160px; height: 120px; }
+#cam-video, #pose-overlay {
+  position: absolute; inset: 0;
+  width: 160px; height: 120px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #050810;
+}
+#pose-overlay { pointer-events: none; }
+/* Phase-11：调试面板阈值/冷却滑块（cam-debug 默认 pointer-events:auto，可交互；
+   全屏跳跃点击已被 main.js 的 closest('#cam-debug')/input 排除，不会误触发） */
+#pose-tuning { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+#pose-tuning label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #8ba3cc; white-space: nowrap;
+}
+#pose-tuning input[type="range"] {
+  flex: 1; min-width: 0; height: 14px;
+  accent-color: #00f0ff; cursor: pointer;
+}
+#pose-tuning span {
+  min-width: 34px; text-align: right;
+  color: var(--ice); font-family: Consolas, 'Courier New', monospace;
+}
+#pose-readout {
+  margin-top: 6px; font-size: 11px; line-height: 1.5;
+  color: var(--ice);
+  font-family: Consolas, 'Courier New', monospace;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+/* ===== 移动端 ===== */
+@media (max-width: 760px) {
+  #title { font-size: 20px; letter-spacing: 4px; }
+  #score-line { font-size: 15px; }
+  #cam-debug { width: 130px; }
+  #cam-stage, #cam-video, #pose-overlay { width: 114px; height: 86px; }
+  #pose-tuning label { font-size: 9px; }
+  #pose-tuning span { min-width: 30px; }
+}
+
+/* ===== 开场流程（introFlow 状态机）===== */
+.hidden { display: none !important; }
+
+/* 加载层：全屏覆盖；pointer-events:none 不拦截任何输入 */
+#intro-overlay {
+  position: fixed; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(10, 17, 40, 0.5) 0%, rgba(10, 17, 40, 0.82) 100%);
+  transition: opacity 0.9s ease;
+}
+#intro-center { text-align: center; }
+#intro-title-wrap { position: relative; display: inline-block; padding: 26px 40px; }
+#intro-title {
+  font-size: clamp(30px, 6vw, 54px);
+  font-weight: 700;
+  letter-spacing: 10px;
+  background: linear-gradient(90deg, var(--warm-soft) 0%, var(--warm) 45%, var(--ice) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 196, 107, 0.4));
+}
+/* 暖色进度细线（规格7）：SVG 椭圆环，弧长=真实进度，dashoffset 动画使其环绕标题旋转 */
+#ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+#ring-ellipse {
+  fill: none;
+  stroke: var(--warm);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 1000;                        /* JS 按真实进度写入弧长 */
+  filter: drop-shadow(0 0 6px rgba(255, 196, 107, 0.8));
+  animation: ring-travel 2.6s linear infinite;
+}
+@keyframes ring-travel {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -1000; }
+}
+#intro-sub {
+  margin-top: 18px; font-size: 14px; font-weight: 500;
+  color: var(--ice); letter-spacing: 3px;
+}
+#intro-load-label {
+  margin-top: 10px; font-size: 12px; color: #8ba3cc;
+  font-family: Consolas, 'Courier New', monospace;
+}
+/* 加载完成：标题轻微弹跳，随后整层淡出（.hidden 由 introFlow 在动画后加上） */
+#intro-overlay.done { opacity: 0; }
+#intro-overlay.done #intro-title { animation: title-bounce 0.5s ease; }
+@keyframes title-bounce {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-14px) scale(1.06); }
+  70%  { transform: translateY(2px) scale(0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* 全息玻璃拟态面板（摄像头授权 / 兜底提示 / 结算共用） */
+.glass-panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 4;
+  pointer-events: auto;
+  background: linear-gradient(160deg, rgba(28, 43, 89, 0.45) 0%, rgba(10, 17, 40, 0.62) 100%);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 0 28px rgba(159, 216, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 26px 30px;
+  text-align: center;
+  max-width: min(420px, 88vw);
+}
+#cam-prompt p {
+  font-size: 14px; font-weight: 500; line-height: 1.9; color: #dce8fa;
+  margin-bottom: 20px;
+}
+#enable-cam-btn {
+  display: block; width: 100%;
+  font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 2px;
+  padding: 12px 18px;
+  color: var(--warm-soft);
+  background: rgba(255, 196, 107, 0.08);
+  border: 1px solid var(--warm);                   /* 暖色微光描边按钮 */
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(255, 196, 107, 0.3), inset 0 0 8px rgba(255, 196, 107, 0.1);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+#enable-cam-btn:hover {
+  background: rgba(255, 196, 107, 0.18);
+  box-shadow: 0 0 20px rgba(255, 196, 107, 0.5);
+}
+#skip-cam-link {
+  display: inline-block; margin-top: 14px;
+  font-size: 13px; font-weight: 500; color: #a9c3e8;
+  text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer;
+}
+#skip-cam-link:hover { color: var(--ice); }
+
+/* 校准层：中央恐龙剪影 + 倒计时 + 分步提示（pointer-events:none 不拦截输入） */
+#calib-overlay {
+  position: fixed; inset: 0; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+#calib-count {
+  font-size: 56px; font-weight: 700;
+  color: var(--warm-soft);
+  text-shadow: 0 0 18px rgba(255, 196, 107, 0.7);
+}
+#dino-silhouette { width: min(240px, 45vw); height: auto; opacity: 0.9; }
+#dino-silhouette rect {
+  fill: rgba(159, 216, 255, 0.14);                  /* 半透明恐龙剪影（站位参考，冷色） */
+  stroke: rgba(159, 216, 255, 0.3);
+  stroke-width: 0.5;
+  transition: fill 0.3s, stroke 0.3s, filter 0.3s;
+}
+#dino-silhouette.lit rect {                         /* 校准成功：暖色点亮 */
+  fill: rgba(255, 196, 107, 0.75);
+  stroke: var(--warm);
+  filter: drop-shadow(0 0 10px rgba(255, 196, 107, 0.9));
+}
+#calib-step-text {
+  font-size: 15px; font-weight: 600; color: var(--ice);
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(159, 216, 255, 0.4);
+}
+
+/* 兜底提示 toast（置于画面下方，避免挡住游戏区） */
+#fallback-toast {
+  top: auto; bottom: 18vh; transform: translateX(-50%);
+  padding: 16px 22px;
+  display: flex; align-items: center; gap: 14px;
+}
+#fallback-msg {
+  font-size: 13px; font-weight: 500; color: var(--warm-soft);
+}
+#fallback-start-btn {
+  font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  padding: 8px 14px;
+  color: var(--warm-soft);
+  background: rgba(255, 196, 107, 0.08);
+  border: 1px solid rgba(255, 196, 107, 0.45);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#fallback-start-btn:hover { background: rgba(255, 196, 107, 0.18); }
+
+/* 右上角常驻「重新校准」（playing 态显示） */
+#recalibrate-btn {
+  position: fixed; right: 14px; top: 14px; z-index: 3;
+  pointer-events: auto;
+  font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 1px;
+  padding: 9px 14px;
+  color: var(--ice);
+  background: rgba(159, 216, 255, 0.08);
+  border: 1px solid rgba(159, 216, 255, 0.45);
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+#recalibrate-btn:hover {
+  background: rgba(159, 216, 255, 0.18);
+  box-shadow: 0 0 14px rgba(159, 216, 255, 0.45);
+}
+
+/* 游戏玻璃卡片：加载完成后缩放淡入（.revealed），进入 playing 时轻脉冲（.pulse） */
+.glass-card {
+  opacity: 0; transform: scale(0.92);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.glass-card.revealed { opacity: 1; transform: scale(1); }
+.glass-card.pulse { animation: card-pulse 0.6s ease; }
+@keyframes card-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* ===== 开场流程 · 移动端 ===== */
+@media (max-width: 760px) {
+  #intro-title { font-size: 26px; letter-spacing: 6px; }
+  #intro-title-wrap { padding: 18px 24px; }
+  .glass-panel { padding: 20px 18px; }
+  #fallback-toast { flex-direction: column; gap: 10px; }
+  #calib-count { font-size: 40px; }
+}
+
+/* ============================================================ */
+/* ===== Phase-5：3D 跑酷模式 UI（全息玻璃风） ===== */
+/* ============================================================ */
+
+/* 暮色渐变背景（规格1 #0a1128 → #1c2b59；three 天空纹理同色系，页面底色与之融合） */
+body {
+  background: linear-gradient(180deg, #0a1128 0%, #131f45 55%, #1c2b59 100%);
+}
+
+/* 极淡暗角（规格7：放弃像素扫描线，仅保留暗角聚焦画面中心；纯装饰层，绝不拦截输入） */
+#crt-overlay {
+  position: fixed; inset: 0; z-index: 8;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(4, 7, 18, 0.42) 100%);
+}
+
+/* 3D HUD：顶部居中分数（pointer-events:none —— 全屏点击跳跃不被拦截） */
+#hud3d {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 3; pointer-events: none; text-align: center;
+}
+#hud3d-scoreline {
+  font-size: 22px; font-weight: 700; letter-spacing: 4px;
+  color: var(--ice); text-shadow: 0 0 10px rgba(159, 216, 255, 0.55);
+}
+#hud3d-scoreline #hi3d { color: #7f93bd; margin-right: 20px; }
+#hud3d-scoreline #score3d { color: #ffffff; }
+#speed3d {
+  margin-top: 6px; font-size: 12px; font-weight: 600; letter-spacing: 2px;
+  color: var(--warm); text-shadow: 0 0 8px rgba(255, 196, 107, 0.55);
+}
+
+/* 结算面板（复用 .glass-panel 全息玻璃拟态） */
+#result-panel { min-width: 280px; }
+#result-title {
+  font-size: 26px; font-weight: 700; letter-spacing: 4px;
+  color: var(--danger); margin-bottom: 16px;
+  text-shadow: 0 0 14px rgba(255, 107, 94, 0.6);
+}
+#result-panel .result-row {
+  font-size: 15px; font-weight: 600; color: var(--ice);
+  margin: 10px 0; letter-spacing: 2px;
+}
+#result-panel .result-row span { color: #ffffff; margin-left: 14px; }
+#result-restart-btn {
+  margin-top: 14px;
+  font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 2px;
+  color: #1a1208;
+  background: linear-gradient(135deg, var(--warm-soft) 0%, var(--warm) 100%);
+  border: none; border-radius: 8px; padding: 11px 22px; cursor: pointer;
+  box-shadow: 0 0 16px rgba(255, 196, 107, 0.45);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+#result-restart-btn:hover { transform: scale(1.05); box-shadow: 0 0 24px rgba(255, 196, 107, 0.7); }
+#result-hint { margin-top: 12px; font-size: 11px; color: #7f93bd; }
+
+/* 左下角模式条：2D/3D 切换 + 视角 + 景深开关（规格9）+ 体感侧移（唯一左下常驻可交互 UI） */
+#mode-bar {
+  position: fixed; left: 14px; bottom: 14px; z-index: 3;
+  display: flex; align-items: center; gap: 12px;
+  pointer-events: auto;
+}
+#mode-toggle, #cam-toggle, #dof-toggle, #quality-toggle {
+  font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 1px;
+  color: var(--warm-soft);
+  background: linear-gradient(160deg, rgba(28, 43, 89, 0.55) 0%, rgba(10, 17, 40, 0.7) 100%);
+  border: 1px solid rgba(255, 196, 107, 0.35); border-radius: 8px;
+  padding: 8px 13px; cursor: pointer;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.12);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+#mode-toggle:hover, #cam-toggle:hover, #dof-toggle:hover, #quality-toggle:hover {
+  background: rgba(255, 196, 107, 0.14);
+  box-shadow: 0 0 14px rgba(255, 196, 107, 0.35);
+}
+#lean-label {
+  font-size: 12px; font-weight: 600; color: var(--ice); letter-spacing: 1px;
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  user-select: none;
+}
+#lean-toggle { accent-color: var(--warm); cursor: pointer; }
+
+/* Phase-5 · 移动端 */
+@media (max-width: 760px) {
+  #hud3d-scoreline { font-size: 16px; letter-spacing: 2px; }
+  #result-panel { min-width: 0; width: 84vw; }
+  #mode-bar { left: 10px; bottom: 10px; gap: 8px; flex-wrap: wrap; max-width: 70vw; }
+  #mode-toggle, #cam-toggle, #dof-toggle, #quality-toggle { font-size: 11px; padding: 7px 10px; }
+  #lean-label { font-size: 11px; }
+}
+
+/* ===== Phase-14：红色危险暗角（狂飙/减速）+ 冰霜覆盖（细雪触发）——纯表现层 pointer-events:none，绝不拦截输入 ===== */
+#danger-vignette {
+  position: fixed; inset: 0; z-index: 6; pointer-events: none;
+  opacity: 0; transition: opacity .25s ease;
+  background: radial-gradient(ellipse at center, rgba(255,20,20,0) 55%, rgba(255,20,20,.55) 100%);
+}
+/* Phase-15：dangerLevel≥0.70（≈chase<6u/怪物扑杀）红色脉冲呼吸——filter 动画不与内联 opacity 节流冲突 */
+#danger-vignette.pulsing { animation: danger-pulse .9s ease-in-out infinite; }
+@keyframes danger-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.8) saturate(1.35); }
+}
+#frost-overlay {
+  position: fixed; inset: 0; z-index: 7; pointer-events: none;
+  opacity: 0; transition: opacity .35s ease;
+  background:
+    radial-gradient(ellipse at top left, rgba(200,230,255,.5) 0%, rgba(200,230,255,0) 32%),
+    radial-gradient(ellipse at top right, rgba(200,230,255,.5) 0%, rgba(200,230,255,0) 32%),
+    radial-gradient(ellipse at bottom left, rgba(200,230,255,.5) 0%, rgba(200,230,255,0) 32%),
+    radial-gradient(ellipse at bottom right, rgba(200,230,255,.5) 0%, rgba(200,230,255,0) 32%);
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>体感小恐龙 · DINO MOTION</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="vendor/fonts/rajdhani.css">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+  <!-- Three.js 3D 沉浸式背景层（pointer-events:none，绝不拦截游戏输入） -->
+  <div id="scene3d-container"></div>
+
+  <!-- 前景 UI：透明全息玻璃拟态卡片（Phase-5 规格7） -->
+  <div id="ui-layer">
+    <div class="glass-card">
+      <h1 id="title">体感小恐龙</h1>
+      <div id="score-line">HI <span id="hi-score">00000</span><span id="score">00000</span></div>
+      <canvas id="game-canvas" width="800" height="260"></canvas>
+      <div id="hint-bar">
+        <span>空格 / 点击画面 / 快速起身或原地跳（体感，支持坐姿半身）均可跳跃；A·D 或 ←·→ 或身体左右倾斜（体感）变道｜三类障碍：🟥 岩浆路障必须跳 · 🟪 黑曜石高墙必须变道 · ⬛ 虚空深坑必须跳</span>
+        <button id="calibrate-btn" type="button">🧍 点击校准（坐直或站直）</button>
+      </div>
+      <div id="pose-status">摄像头：未启动</div>
+      <div id="perf-status">FPS --</div>
+    </div>
+  </div>
+
+  <!-- 右下角摄像头调试小窗：实时画面 + 骨架叠加 + 读数 -->
+  <div id="cam-debug">
+    <div id="cam-header"><span class="rec-dot"></span>REC · 姿态调试</div>
+    <div id="cam-stage">
+      <video id="cam-video" width="320" height="240" playsinline muted></video>
+      <canvas id="pose-overlay" width="160" height="120"></canvas>
+    </div>
+    <div id="pose-readout">h: --
+阈值: 0.060
+跳跃: --</div>
+    <!-- Phase-11：阈值/冷却滑块（改动即时生效，poseController.setThreshold/setCooldown） -->
+    <div id="pose-tuning">
+      <label>跳跃阈值 <input id="jump-threshold" type="range" min="0.02" max="0.20" step="0.005" value="0.06"><span id="jump-threshold-val">0.060</span></label>
+      <label>冷却 ms <input id="jump-cooldown" type="range" min="150" max="800" step="50" value="300"><span id="jump-cooldown-val">300</span></label>
+    </div>
+  </div>
+
+  <!-- ===== 开场流程（js/introFlow.js 状态机驱动） ===== -->
+
+  <!-- 加载层：全屏 3D 场景之上的科技感标题 + 暖色进度环（真实资源加载聚合） -->
+  <div id="intro-overlay">
+    <div id="intro-center">
+      <div id="intro-title-wrap">
+        <svg id="ring-svg" viewBox="0 0 480 140" aria-hidden="true">
+          <ellipse id="ring-ellipse" cx="240" cy="70" rx="228" ry="58" pathLength="1000"></ellipse>
+        </svg>
+        <h1 id="intro-title">DINO JUMP</h1>
+      </div>
+      <div id="intro-sub">正在唤醒体感引擎…</div>
+      <div id="intro-load-label">正在加载… 0%</div>
+    </div>
+  </div>
+
+  <!-- 摄像头授权引导：玻璃拟态小面板 -->
+  <div id="cam-prompt" class="glass-panel hidden">
+    <p>本游戏需要摄像头捕捉跳跃动作，画面仅在本地处理，不会上传</p>
+    <button id="enable-cam-btn" type="button">开启摄像头</button>
+    <a id="skip-cam-link" href="#" role="button">跳过，用空格键玩</a>
+  </div>
+
+  <!-- 校准层：中央像素恐龙剪影（站位参考）+ 倒计时 + 分步提示；不拦截输入 -->
+  <div id="calib-overlay" class="hidden">
+    <div id="calib-count">3</div>
+    <svg id="dino-silhouette" viewBox="-8 -2 56 52" aria-hidden="true">
+      <rect x="-4" y="10" width="6" height="6"></rect>
+      <rect x="0" y="14" width="8" height="6"></rect>
+      <rect x="6" y="16" width="22" height="20"></rect>
+      <rect x="16" y="0" width="22" height="16"></rect>
+      <rect x="34" y="8" width="6" height="5"></rect>
+      <rect x="24" y="24" width="4" height="8"></rect>
+      <rect x="10" y="36" width="6" height="10"></rect>
+      <rect x="20" y="36" width="6" height="10"></rect>
+    </svg>
+    <div id="calib-step-text">请保持上半身处于画面中央，坐直或站直</div>
+  </div>
+
+  <!-- 兜底提示：授权失败 / 10s 无人 → 「可以先用空格键开始」 -->
+  <div id="fallback-toast" class="glass-panel hidden">
+    <span id="fallback-msg">可以先用空格键开始</span>
+    <button id="fallback-start-btn" type="button">开始游戏</button>
+  </div>
+
+  <!-- 右上角常驻「重新校准」（playing 态显示，随时回到校准流程） -->
+  <button id="recalibrate-btn" type="button" class="hidden">⟳ 重新校准</button>
+
+  <!-- ===== Phase-3：3D 跑酷模式 UI ===== -->
+
+  <!-- 3D 模式 HUD：全息玻璃风分数 + 最高分 + 速度（pointer-events:none，不拦截跳跃点击） -->
+  <div id="hud3d" class="hidden">
+    <div id="hud3d-scoreline">HI <span id="hi3d">00000</span><span id="score3d">00000</span></div>
+    <div id="speed3d">SPD --.-</div>
+  </div>
+
+  <!-- 撞击结算面板（本局分数 + 最高分 + 再来一局） -->
+  <div id="result-panel" class="glass-panel hidden">
+    <h2 id="result-title">GAME OVER</h2>
+    <div class="result-row">SCORE <span id="result-score-val">00000</span></div>
+    <div class="result-row">HI <span id="result-hi-val">00000</span></div>
+    <button id="result-restart-btn" type="button">▶ 再来一局</button>
+    <div id="result-hint">按空格键也可重开</div>
+  </div>
+
+  <!-- 左下角模式条：2D/3D 双向切换 + 3D 视角切换（Phase-4 规格6） + 景深开关（Phase-5 规格9） + 手动画质档（Phase-10） + 体感变道开关（Phase-12：默认开启，可关闭） -->
+  <div id="mode-bar">
+    <button id="mode-toggle" type="button">🕹 切换 2D 模式</button>
+    <button id="cam-toggle" type="button" title="切换 3D 相机视角">📷 视角：高角度追尾</button>
+    <button id="dof-toggle" type="button" title="切换移轴景深（BokehPass）">🔍 景深：开</button>
+    <button id="quality-toggle" type="button" title="手动画质档：低（默认，锁定 L2，Bloom 保留）→ 自动（FPS 自适应，可恢复）→ 高（锁定完整画质）">🎚 画质：低</button>
+    <label id="lean-label"><input type="checkbox" id="lean-toggle" checked> 体感变道</label>
+  </div>
+
+  <!-- 暗角（Phase-5 规格7：放弃像素扫描线，仅保留极淡暗角聚焦；pointer-events:none） -->
+  <!-- Phase-14：红色危险暗角（狂飙常驻=1-chase/30 | 减速 0.55）+ 冰霜覆盖（细雪触发 2s）；pointer-events:none 纯表现层，绝不拦截输入 -->
+  <div id="danger-vignette" aria-hidden="true"></div>
+  <div id="frost-overlay" aria-hidden="true"></div>
+
+  <div id="crt-overlay" aria-hidden="true"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

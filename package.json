@@ -1,0 +1,20 @@
+{
+  "name": "dino-motion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "体感 3D 跑酷小恐龙：MediaPipe 姿态驱动 + Three.js 暮色微缩场景，纯前端零构建。",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node scripts/run-tests.mjs"
+  },
+  "keywords": [
+    "three.js",
+    "mediapipe",
+    "webgl",
+    "pose-estimation",
+    "game",
+    "canvas"
+  ],
+  "license": "MIT"
+}
