@@ -41,7 +41,7 @@
 - **Rendering**: procedural sky/asphalt/window textures (**zero external images**), instanced voxel dino & infinite recycled scenery, Bokeh tilt-shift DOF + Bloom, single rAF loop.
 - **Gameplay**: three-lane, six obstacle types from a **pure-function weighted generator**; a **monster-chase + frenzy** state machine as a second death path.
 - **Balance by math, not vibes**: jump-parabola constraints on obstacle heights / pit lengths, validated by **seed-sampled tests proving no "unwinnable" spawn row**; a **bi-directional, self-recovering FPS quality tier (L0–L3)**.
-- **Result**: zero-build / zero-CDN / fully-offline front end; **~3,000 hand-written JS lines** across 7 modules, **37 passing assertions** across 3 pure-function test scripts.
+- **Result**: zero-build / zero-CDN / fully-offline front end; **≈3,000 hand-written JS lines** across 7 modules, **37 passing assertions** across 3 pure-function test scripts.
 
 ---
 
