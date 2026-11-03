@@ -7,41 +7,42 @@
 
 ## 一句话版本（社交 / 口头介绍）
 
-**用 3000+ 行原生 JavaScript 做了一款「对着摄像头做动作就能玩」的 3D 跑酷小恐龙**：MediaPipe 姿态识别驱动跳跃与变道，Three.js 搭建暮色微缩场景，全程无构建、可离线运行。
+**用 3,000 余行原生 JavaScript 做了一款「对着摄像头做动作就能玩」的 3D 跑酷小恐龙**：MediaPipe Tasks-Vision（PoseLandmarker）做姿态识别驱动跳跃与变道，Three.js r160（WebGL2）搭建暮色微缩场景，全程无构建、可离线运行。
 
 ---
 
 ## 简历正文（STAR，中文）
 
-**体感 3D 跑酷小恐龙 `DINO MOTION`** ｜ 独立开发 ｜ Three.js + MediaPipe + Canvas ｜ 2025
+**体感 3D 跑酷小恐龙 `DINO MOTION`** ｜ 独立开发 ｜ Three.js r160 + MediaPipe Tasks-Vision + WebGL2/Canvas ｜ 2025
 
 - **项目背景**：经典 Chrome 恐龙小游戏（按键跳跃）玩法单一、门槛低，无法作为技术深度展示。将其重构为**体感 3D 跑酷**：用摄像头识别玩家站立/跳跃/左右倾身，替代键盘，并把 2D 像素风升级为 Three.js 暮色微缩世界。
 - **我的工作**：
-  - **体感输入链路**：接入 MediaPipe PoseLandmarker，设计**头部 Y 位移 + 上升速度双门控**的跳跃判定（`h > 阈值 0.06` 且 `v > 0.55/s`），并加入**2 秒校准基线 + 慢 EMA 漂移补偿 + 冷却重武装**，彻底解决久坐下滑误触发和「连击误判（一次起身跳 21 次）」问题，完全支持坐姿/半身入镜。
+  - **体感输入链路**：接入 **MediaPipe Tasks-Vision 的 PoseLandmarker（`pose_landmarker_lite` 模型 + WASM 运行时，GitHub 官方库，非自研姿态算法）**，在页面内每帧跑一次 `detectForVideo`；设计**头部 Y 位移 + 上升速度双门控**的跳跃判定（`h > 阈值 0.06` 且 `v > 0.55/s`），并加入**2 秒校准基线 + 慢 EMA 漂移补偿 + 冷却重武装**，彻底解决久坐下滑误触发和「连击误判（一次起身跳 21 次）」问题，完全支持坐姿/半身入镜。
   - **体感变道**：以肩中点 X 偏移为信号，设计**死区 0.05 + 滞回 0.025 + 冷却 350ms** 三重防抖，实现左右倾身变道；与键盘 A/D 汇聚同一入口。
   - **3D 渲染与场景**：Three.js 搭建暮色天空、程序化星空/沥青/窗户纹理（零外部贴图）、110 栋微缩天际线、InstancedMesh 无限循环街景与体素恐龙（约 90 立方体 4 个 InstancedMesh）、Bokeh 移轴景深 + Bloom 辉光后处理；**单 requestAnimationFrame 驱动全部渲染**。
   - **玩法系统**：三车道六类障碍（岩浆路障/黑曜石墙/虚空深坑/粘液块/细雪块/金币）由**纯函数生成器加权随机**；加入**怪物追逐 + 狂飙期**状态机（chaseDistance 归零即被扑杀 = 第二条死亡路径）。
   - **难度与平衡（工程化红线）**：用**跳跃抛物线数学**约束障碍高度与深坑长度，用种子采样测试验证「没有生不出的必死排」；建立**双向可恢复的 FPS 自适应画质档（L0–L3）**，低帧自动降级、高帧自动升回。
 - **成果 / 亮点**：
-  - 纯前端**零构建、零 CDN、可完全离线**运行；手写 7 个 JS 模块共 **约 3,000 行**，配套 3 个纯函数自验脚本、共 **37 项断言全部通过**。
+  - 纯前端**零构建、零 CDN、可完全离线**运行；手写 7 个 JS 模块共 **3,000 余行（实测 3,639 行）**，业务代码（HTML+CSS+JS）**210 KB → gzip 后 75 KB**；配套 3 个纯函数自验脚本、共 **37 项断言全部通过**。
+  - **实测结果指标（同一台机器、Chrome + AMD 集显实测）**：线上首屏 **30 个请求全部同源、零 CDN**，gzip 后传输 **8.5 MB**（其中姿态模型 4.8 MB + WASM 2.8 MB，仅首次加载、之后走 HTTP 缓存），**load 2.1 s / DOMContentLoaded 1.7 s**；本地 http 下 DOMContentLoaded **54 ms**；渲染**单帧 7 ms（约 140 fps 上限，垂直同步下锁 60 fps）**；体感推理与渲染共用单一 rAF 循环，输入到跳跃指令的延迟 **≤ 1 帧（≈16 ms）**。
   - 拆出并单测了**纯函数游戏规则内核**（障碍生成 / 排间距 / 追逐状态机），使玩法平衡可被无头环境自动验证，而非只能肉眼调试。
   - 体感识别支持**半身 / 坐姿**，把「必须全身站远」的体验门槛大幅降低。
 
-**技术栈**：JavaScript (ESModules) · Three.js (WebGL / 后处理) · MediaPipe Tasks-Vision · Canvas 2D · Node.js（零依赖静态服务与测试脚本）
+**技术栈**：JavaScript (原生 ES Modules + importmap，零构建) · Three.js r160（WebGL2 / InstancedMesh / 后处理 Bloom + Bokeh）· MediaPipe Tasks-Vision（PoseLandmarker + WASM）· Canvas 2D 程序化纹理 · Node.js（零依赖静态服务 / 测试 / 指标采集脚本）· GitHub Pages（部署）
 
 ---
 
 ## 简历正文（英文版）
 
-**Motion-Controlled 3D Endless Runner — "DINO MOTION"** | Solo project | Three.js + MediaPipe | 2025
+**Motion-Controlled 3D Endless Runner — "DINO MOTION"** | Solo project | Three.js r160 + MediaPipe Tasks-Vision + WebGL2 | 2025
 
 - Rebuilt the classic Chrome dino game into a **webcam-driven 3D endless runner**: pose estimation lets you jump and switch lanes by moving your body, rendered in a dusk-styled Three.js miniature world.
-- **Pose input**: MediaPipe PoseLandmarker with a dual-gated jump detector (**head-Y displacement + upward velocity**), 2-second calibration baseline, slow-EMA drift compensation, and cooldown re-arming — fully playable **seated / upper-body-only**, fixing false double-triggers.
+- **Pose input**: **MediaPipe Tasks-Vision PoseLandmarker** (`pose_landmarker_lite` + WASM runtime, official Google library) running one `detectForVideo` per frame, with a dual-gated jump detector (**head-Y displacement + upward velocity**), 2-second calibration baseline, slow-EMA drift compensation, and cooldown re-arming — fully playable **seated / upper-body-only**, fixing false double-triggers.
 - **Lane switching**: shoulder-midpoint X offset with **dead-zone + hysteresis + cooldown** debounce; merged with keyboard input into one entry point.
 - **Rendering**: procedural sky/asphalt/window textures (**zero external images**), instanced voxel dino & infinite recycled scenery, Bokeh tilt-shift DOF + Bloom, single rAF loop.
 - **Gameplay**: three-lane, six obstacle types from a **pure-function weighted generator**; a **monster-chase + frenzy** state machine as a second death path.
 - **Balance by math, not vibes**: jump-parabola constraints on obstacle heights / pit lengths, validated by **seed-sampled tests proving no "unwinnable" spawn row**; a **bi-directional, self-recovering FPS quality tier (L0–L3)**.
-- **Result**: zero-build / zero-CDN / fully-offline front end; **≈3,000 hand-written JS lines** across 7 modules, **37 passing assertions** across 3 pure-function test scripts.
+- **Result**: zero-build / zero-CDN / fully-offline front end (30 same-origin requests, zero third-party calls); **3,600+ hand-written JS lines** across 7 modules; app code 210 KB → **75 KB gzipped**; live first load **8.5 MB gzipped / 2.1 s** (4.8 MB pose model + 2.8 MB WASM, cached after first visit); **7 ms per rendered frame (~140 fps uncapped, 60 fps under vsync)**; pose inference and rendering share one rAF loop, so **input-to-jump latency ≤ 1 frame (~16 ms)**; **37 passing assertions** across 3 pure-function test scripts.
 
 ---
 
@@ -74,14 +75,17 @@ A：两件。一是**输入信噪比**——把不可靠的人体信号变成可
 
 | 指标 | 数值 | 来源 |
 |---|---|---|
-| 手写 JS 模块行数（7 个） | 352+184+1664+253+366+493+73 = **3,385 行** | 逐文件 `Measure-Object -Line`；显式导出 94 个（runner3d 79 / pose 9 / scene3d 3 / perf 1 / introFlow 2） |
+| 手写 JS 模块行数（7 个） | 275+207+389+80+406+1743+539 = **3,639 行** | `node -e` 逐文件按 `\n` 计数（`js/*.js`）；显式导出 94 个（runner3d 79 / pose 9 / scene3d 3 / perf 1 / introFlow 2） |
 | CSS 行数 | 451 | `css/style.css` |
 | 测试脚本 | 3 个，**37 项断言全 PASS** | `node scripts/run-tests.mjs`：chase 20 + sample 17 + framing（网格+平滑全 PASS） |
 | 障碍类型 | 6 类（barrier/wall/pit/slime/snow/coin） | `PLAN_WEIGHTS`，权重合计=1 |
 | 开发阶段 | Phase 2–15 共 14 个迭代 | 源码内 `Phase-N` 注释统计 |
 | 第三方依赖 | 已本地化 566 文件 / 46.7MB | `vendor/`（three 556 / mediapipe 5 + models 1 + fonts 4） |
+| 首屏实测 | 30 请求全同源 / gzip 8.5 MB / load 2,059 ms / DCL 1,704 ms / 本地 DCL 54 ms | `node scripts/measure.mjs https://myymp685-cloud.github.io/google-ai-studio/`（Chrome + AMD 集显） |
+| 渲染帧耗时 | 单帧 p50 7.0 ms（≈140 fps 上限） | 同上脚本 rAF 采样 120 帧 |
+| 业务代码体积 | 209.8 KB 原始 → 75.0 KB gzip（-64%） | `node -e` 对 `js/*.js,css/*.css,index.html` 做 zlib.gzipSync |
 
-> ⚠️ 注意「3,385 行」是**手写模块**，不含 `vendor/` 第三方库。面试说「约 3000 行手写代码」是准确且保守的表述。
+> ⚠️ 注意「3,639 行」是**手写模块**，不含 `vendor/` 第三方库。简历里写「**3,000 余行**」既准确又不显浮夸（不要写 3000+ 堆符号，容易被追问）。
 
 ---
 

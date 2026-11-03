@@ -7,6 +7,12 @@
 
 体感 3D 跑酷小恐龙 + Three.js 沉浸式暮色微缩场景。纯前端、无构建步骤。默认 **3D 第三人称追尾跑酷模式（Phase-12：三车道，体感/键盘变道躲避）**，左下角一键切换回 **2D Canvas 兜底模式**（经典 Chrome Dino，保持单车道）。
 
+## 技术栈 & 实测指标
+
+- **技术栈**：原生 JavaScript（ES Modules + importmap，零构建）· Three.js **r160**（WebGL2 / InstancedMesh / Bloom + Bokeh 后处理）· **MediaPipe Tasks-Vision — PoseLandmarker**（`pose_landmarker_lite` 模型 + WASM，Google 官方库；每帧一次 `detectForVideo`）· Canvas 2D 程序化纹理 · Node.js 零依赖脚本（静态服务 / 测试 / 指标采集）· GitHub Pages 部署。
+- **代码规模**：7 个 JS 模块 **3,639 行**；业务代码（HTML+CSS+JS）**210 KB → gzip 75 KB（-64%）**；3 个纯函数自验脚本、**37 项断言全绿**。
+- **实测（`node scripts/measure.mjs`，Chrome + AMD 集显）**：首屏 **30 个请求全部同源、零 CDN**；线上 gzip 传输 **8.5 MB**（姿态模型 4.8 MB + WASM 2.8 MB，仅首次加载，之后走 HTTP 缓存）；**load 2.1 s / DOMContentLoaded 1.7 s**；本地 http 下 DOMContentLoaded **54 ms**；渲染**单帧 7 ms（≈140 fps 上限，垂直同步下 60 fps）**；姿态推理与渲染共用单一 rAF 循环，**输入→跳跃指令 ≤1 帧（≈16 ms）**。
+
 ## 视觉风格（Phase-5：微缩模型 / 高精度体素）
 
 - **暮色光影（Phase-7 调亮）**：天空为深蓝暮色渐变 CanvasTexture（#0a1128 → #1c2b59 → 地平线余晖 #31457c + 程序化星空，同时作为 PMREM 环境反射源）；暖橙 #ffb45e 主平行光 ×3.0（单张 shadow map + PCFSoft）+ 跟随相机补光 + HemisphereLight ×0.95 + AmbientLight ×0.85（背光面不死黑）；ACESFilmicToneMapping（exposure 1.35）+ OutputPass；FogExp2 淡雾（密度 0.0055、雾色=地平线锚色 #1c2b59，远处自然隐入夜空）。零外部贴图文件——柏油路面、星空、天际线窗户等纹理全部由 Canvas 程序化生成。

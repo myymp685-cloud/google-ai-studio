@@ -15,6 +15,15 @@
 | `docs/preview-3d.png` / `preview-2d.png` / `preview-loading.png` | 实机截图（3D 等距视角 / 2D 兜底模式 / 加载页） |
 | `assets/demo/dino-motion-demo.gif` | 8 秒实机跑动动图，README 顶部直接展示 |
 | `scripts/capture-shots.mjs` | 无头 Chromium（CDP）实跑截图 + 录制 screencast 原始帧的脚本 |
+| `scripts/measure.mjs` | 无依赖指标采集：首屏传输体积 / DCL / load / rAF 帧率 / WebGL 渲染器（`node scripts/measure.mjs <url>`） |
+
+## 项目速览（可直接粘进求职平台）
+
+> **体感 3D 跑酷小恐龙 DINO MOTION** — 摄像头姿态驱动、纯前端零构建
+> 技术栈：原生 JS（ES Modules + importmap）· Three.js r160（WebGL2）· MediaPipe Tasks-Vision PoseLandmarker（+WASM）· Canvas 2D 程序化纹理
+> 规模：7 模块 3,639 行，业务代码 gzip 后 75 KB，37 项断言全绿
+> 实测：首屏 30 请求全同源、零 CDN，gzip 传输 8.5 MB / load 2.1 s；单帧渲染 7 ms；输入→跳跃 ≤1 帧（≈16 ms）
+> 在线 Demo：<https://myymp685-cloud.github.io/google-ai-studio/> · 源码：<https://github.com/myymp685-cloud/google-ai-studio>
 
 ## 快速验证（面试现场可演示）
 
