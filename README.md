@@ -2,7 +2,7 @@
 
 ![DINO MOTION 实机演示](assets/demo/dino-motion-demo.gif)
 
-> 🎮 在线试玩：`https://<你的用户名>.github.io/dino-motion/`（部署步骤见 [docs/DEPLOY-GITHUB-PAGES.md](docs/DEPLOY-GITHUB-PAGES.md)）
+> 🎮 **在线试玩：https://myymp685-cloud.github.io/google-ai-studio/** （部署步骤见 [docs/DEPLOY-GITHUB-PAGES.md](docs/DEPLOY-GITHUB-PAGES.md)）
 > 💻 纯前端 · 零构建 · 零 CDN · 可离线运行
 
 体感 3D 跑酷小恐龙 + Three.js 沉浸式暮色微缩场景。纯前端、无构建步骤。默认 **3D 第三人称追尾跑酷模式（Phase-12：三车道，体感/键盘变道躲避）**，左下角一键切换回 **2D Canvas 兜底模式**（经典 Chrome Dino，保持单车道）。
